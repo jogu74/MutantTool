@@ -1,0 +1,52 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: 48 18% 94%;
+  --foreground: 132 12% 12%;
+  --card: 42 18% 98%;
+  --card-foreground: 132 12% 12%;
+  --popover: 42 18% 98%;
+  --popover-foreground: 132 12% 12%;
+  --primary: 113 20% 24%;
+  --primary-foreground: 45 36% 95%;
+  --secondary: 38 24% 86%;
+  --secondary-foreground: 132 12% 18%;
+  --muted: 42 14% 88%;
+  --muted-foreground: 132 8% 40%;
+  --accent: 23 46% 68%;
+  --accent-foreground: 132 12% 12%;
+  --destructive: 1 70% 44%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 36 16% 72%;
+  --input: 36 18% 76%;
+  --ring: 113 20% 24%;
+  --radius: 0.85rem;
+  --font-sans: "IBM Plex Sans";
+  --font-display: "Cinzel";
+}
+
+* {
+  @apply border-border;
+}
+
+html {
+  color-scheme: light;
+}
+
+body {
+  @apply bg-background text-foreground antialiased;
+  background-image:
+    radial-gradient(circle at top, rgba(140, 118, 74, 0.14), transparent 42%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0.9)),
+    linear-gradient(rgba(90, 103, 89, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(90, 103, 89, 0.06) 1px, transparent 1px);
+  background-size: auto, auto, 32px 32px, 32px 32px;
+}
+
+button,
+input,
+textarea {
+  @apply outline-none;
+}

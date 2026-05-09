@@ -1,0 +1,11 @@
+.next
+node_modules
+.env
+.env.local
+.env.production
+dist
+coverage
+prisma/dev.db
+.DS_Store
+*.tsbuildinfo
+generated/

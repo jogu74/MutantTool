@@ -1,0 +1,52 @@
+{
+  "name": "mutant-ua-tool",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "postinstall": "prisma generate",
+    "dev": "node scripts/run-next.mjs dev",
+    "build": "node scripts/run-next.mjs build",
+    "start": "node scripts/run-next.mjs start",
+    "lint": "next lint",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:seed": "prisma db seed"
+  },
+  "dependencies": {
+    "@hookform/resolvers": "^3.9.0",
+    "@prisma/client": "^5.22.0",
+    "@radix-ui/react-label": "^2.1.0",
+    "@radix-ui/react-scroll-area": "^1.2.0",
+    "@radix-ui/react-slot": "^1.1.0",
+    "bcryptjs": "^2.4.3",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "date-fns": "^4.1.0",
+    "lucide-react": "^0.454.0",
+    "next": "^15.0.3",
+    "next-auth": "^5.0.0-beta.25",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-hook-form": "^7.53.0",
+    "sonner": "^1.7.0",
+    "swr": "^2.2.5",
+    "tailwind-merge": "^2.5.4",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@next/swc-wasm-nodejs": "15.5.18",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/node": "^22.9.0",
+    "@types/react": "^19.0.2",
+    "@types/react-dom": "^19.0.2",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.49",
+    "prisma": "^5.22.0",
+    "tailwindcss": "^3.4.15",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  }
+}
