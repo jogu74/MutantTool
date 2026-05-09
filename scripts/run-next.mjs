@@ -47,8 +47,18 @@ function maybeRelocatePrismaEngine() {
 maybeUseWasmSwc();
 maybeRelocatePrismaEngine();
 
-const nextBin = require.resolve("next/dist/bin/next");
-const child = spawn(process.execPath, [nextBin, ...process.argv.slice(2)], {
+const command = process.argv[2];
+const standaloneServer = path.join(projectRoot, ".next", "standalone", "server.js");
+const useStandaloneStart = command === "start" && fs.existsSync(standaloneServer);
+
+const target = useStandaloneStart ? standaloneServer : require.resolve("next/dist/bin/next");
+const args = useStandaloneStart ? [] : process.argv.slice(2);
+
+if (useStandaloneStart) {
+  process.env.HOSTNAME ??= "0.0.0.0";
+}
+
+const child = spawn(process.execPath, [target, ...args], {
   cwd: projectRoot,
   stdio: "inherit",
   env: process.env

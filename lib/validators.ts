@@ -144,3 +144,14 @@ export const adminResetPasswordSchema = z.object({
   userId: recordIdSchema,
   newPassword: z.string().min(8).max(120)
 });
+
+export const adminCreatePlayerSchema = z.object({
+  playerName: z.string().trim().min(1).max(120),
+  email: z.string().trim().email().max(320),
+  password: z.string().min(8).max(120),
+  characterName: z.string().trim().min(1).max(120)
+});
+
+export const adminDeletePlayerSchema = z.object({
+  userId: recordIdSchema
+});

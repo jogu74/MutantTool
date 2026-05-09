@@ -24,8 +24,14 @@ export default async function AdminPage() {
       },
       select: {
         id: true,
-        name: true,
-        email: true
+        email: true,
+        character: {
+          select: {
+            id: true,
+            name: true,
+            playerName: true
+          }
+        }
       },
       orderBy: {
         name: "asc"

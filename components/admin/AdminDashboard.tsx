@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { type FormEvent, useState, useTransition } from "react";
 import Link from "next/link";
 import type { Route } from "next";
-import { Download, KeyRound, Save } from "lucide-react";
+import { Download, KeyRound, Save, Trash2, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { adminResetPlayerPassword } from "@/lib/actions/account";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { createBackupSnapshot } from "@/lib/actions/admin";
+import { createBackupSnapshot, createPlayerWithCharacter, deletePlayerAccount } from "@/lib/actions/admin";
 import { calculateTotalCarriedWeight } from "@/lib/rules";
 import type { SerializedCharacter } from "@/lib/serializers";
 
@@ -24,8 +24,12 @@ type Snapshot = {
 
 type Player = {
   id: string;
-  name: string;
   email: string;
+  character: {
+    id: string;
+    name: string;
+    playerName: string;
+  } | null;
 };
 
 export function AdminDashboard({
@@ -39,9 +43,15 @@ export function AdminDashboard({
 }) {
   const [isPending, startTransition] = useTransition();
   const [isResetPending, startResetTransition] = useTransition();
+  const [isCreatePending, startCreateTransition] = useTransition();
+  const [isDeletePending, startDeleteTransition] = useTransition();
   const [latestSnapshots, setLatestSnapshots] = useState(snapshots);
   const [selectedPlayerId, setSelectedPlayerId] = useState(players[0]?.id ?? "");
   const [resetPassword, setResetPassword] = useState("");
+  const [playerName, setPlayerName] = useState("");
+  const [characterName, setCharacterName] = useState("");
+  const [playerEmail, setPlayerEmail] = useState("");
+  const [playerPassword, setPlayerPassword] = useState("");
 
   function handleCreateBackup() {
     startTransition(async () => {
@@ -72,8 +82,105 @@ export function AdminDashboard({
     });
   }
 
+  function handleCreatePlayer(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    startCreateTransition(async () => {
+      try {
+        const created = await createPlayerWithCharacter({
+          playerName,
+          characterName,
+          email: playerEmail,
+          password: playerPassword
+        });
+        setPlayerName("");
+        setCharacterName("");
+        setPlayerEmail("");
+        setPlayerPassword("");
+        toast.success("Spelare och karaktär skapades.");
+        window.location.href = `/app/admin/characters/${created.id}`;
+      } catch (error) {
+        console.error(error);
+        toast.error(error instanceof Error ? error.message : "Kunde inte skapa spelaren.");
+      }
+    });
+  }
+
+  function handleDeletePlayer(userId: string, label: string) {
+    if (!window.confirm(`Ta bort spelaren ${label} och hela den kopplade karaktären?`)) {
+      return;
+    }
+
+    startDeleteTransition(async () => {
+      try {
+        await deletePlayerAccount({ userId });
+        toast.success("Spelaren togs bort.");
+        window.location.reload();
+      } catch (error) {
+        console.error(error);
+        toast.error(error instanceof Error ? error.message : "Kunde inte ta bort spelaren.");
+      }
+    });
+  }
+
   return (
     <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Lägg till spelare</CardTitle>
+          <CardDescription>Skapa ett nytt spelarkonto och en tom karaktär att fylla i senare.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form className="grid gap-4 md:grid-cols-2 xl:grid-cols-4" onSubmit={handleCreatePlayer}>
+            <div className="space-y-2">
+              <Label htmlFor="create-player-name">Spelarnamn</Label>
+              <Input
+                id="create-player-name"
+                value={playerName}
+                onChange={(event) => setPlayerName(event.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="create-character-name">Karaktär</Label>
+              <Input
+                id="create-character-name"
+                value={characterName}
+                onChange={(event) => setCharacterName(event.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="create-player-email">E-post / login</Label>
+              <Input
+                id="create-player-email"
+                type="email"
+                value={playerEmail}
+                onChange={(event) => setPlayerEmail(event.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="create-player-password">Startlösenord</Label>
+              <Input
+                id="create-player-password"
+                type="password"
+                value={playerPassword}
+                onChange={(event) => setPlayerPassword(event.target.value)}
+                minLength={8}
+                required
+              />
+            </div>
+            <div className="md:col-span-2 xl:col-span-4">
+              <Button type="submit" disabled={isCreatePending}>
+                <UserPlus className="h-4 w-4" />
+                {isCreatePending ? "Skapar..." : "Skapa spelare"}
+              </Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader className="flex flex-row items-center justify-between gap-4">
           <div>
@@ -97,7 +204,7 @@ export function AdminDashboard({
                 <TableHead>TT</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Bärvikt</TableHead>
-                <TableHead className="w-32" />
+                <TableHead className="w-48" />
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -116,9 +223,21 @@ export function AdminDashboard({
                     }).toFixed(1)}
                   </TableCell>
                   <TableCell>
-                    <Button asChild size="sm" variant="outline">
-                      <Link href={`/app/admin/characters/${character.id}` as Route}>Öppna</Link>
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <Button asChild size="sm" variant="outline">
+                        <Link href={`/app/admin/characters/${character.id}` as Route}>Öppna</Link>
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        disabled={isDeletePending}
+                        onClick={() => handleDeletePlayer(character.user.id, character.playerName)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        Ta bort
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
@@ -176,7 +295,7 @@ export function AdminDashboard({
                 >
                   {players.map((player) => (
                     <option key={player.id} value={player.id}>
-                      {player.name} ({player.email})
+                      {player.character?.playerName ?? player.email} ({player.email})
                     </option>
                   ))}
                 </Select>
