@@ -19,7 +19,7 @@ export default async function AppLayout({
     "use server";
 
     await signOut({
-      redirectTo: "/login"
+      redirectTo: "/signin-test"
     });
   }
 
