@@ -44,6 +44,34 @@ function maybeRelocatePrismaEngine() {
   process.env.PRISMA_QUERY_ENGINE_LIBRARY ??= target;
 }
 
+function copyDirectory(sourceDir, targetDir) {
+  if (!fs.existsSync(sourceDir)) {
+    return;
+  }
+
+  fs.mkdirSync(targetDir, { recursive: true });
+
+  for (const entry of fs.readdirSync(sourceDir, { withFileTypes: true })) {
+    const sourcePath = path.join(sourceDir, entry.name);
+    const targetPath = path.join(targetDir, entry.name);
+
+    if (entry.isDirectory()) {
+      copyDirectory(sourcePath, targetPath);
+      continue;
+    }
+
+    fs.copyFileSync(sourcePath, targetPath);
+  }
+}
+
+function maybePrepareStandaloneAssets() {
+  const standaloneNextDir = path.join(projectRoot, ".next", "standalone", ".next");
+  const standalonePublicDir = path.join(projectRoot, ".next", "standalone", "public");
+
+  copyDirectory(path.join(projectRoot, ".next", "static"), path.join(standaloneNextDir, "static"));
+  copyDirectory(path.join(projectRoot, "public"), standalonePublicDir);
+}
+
 maybeUseWasmSwc();
 maybeRelocatePrismaEngine();
 
@@ -55,6 +83,7 @@ const target = useStandaloneStart ? standaloneServer : require.resolve("next/dis
 const args = useStandaloneStart ? [] : process.argv.slice(2);
 
 if (useStandaloneStart) {
+  maybePrepareStandaloneAssets();
   process.env.HOSTNAME = "0.0.0.0";
 } else if (command === "start") {
   process.env.HOSTNAME = "0.0.0.0";
