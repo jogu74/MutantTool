@@ -56,6 +56,10 @@ const args = useStandaloneStart ? [] : process.argv.slice(2);
 
 if (useStandaloneStart) {
   process.env.HOSTNAME ??= "0.0.0.0";
+} else if (command === "start") {
+  process.env.HOSTNAME ??= "0.0.0.0";
+  process.env.PORT ??= "3000";
+  args.push("-H", process.env.HOSTNAME, "-p", process.env.PORT);
 }
 
 const child = spawn(process.execPath, [target, ...args], {
