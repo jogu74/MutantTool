@@ -12,8 +12,8 @@ export default function LoginPage() {
             Ett privat kampanjverktyg för rollformulär, journal och spelledaröverblick.
           </h1>
           <p className="mt-6 max-w-2xl text-base text-muted-foreground">
-            Vi har återställt själva login-ytan, men den riktiga inloggningen är fortfarande tillfälligt avstängd i
-            Railway medan vi bygger tillbaka auth stegvis och säkert.
+            Byggt för distansspel med snabb redigering, tydlig behörighet och en layout som fungerar bra under ett
+            pågående spelmöte på desktop.
           </p>
           <div className="mt-10 grid gap-4 md:grid-cols-3">
             <div className="rounded-2xl border bg-background/70 p-4">
@@ -35,12 +35,6 @@ export default function LoginPage() {
               className="rounded-full border border-primary/20 bg-background px-4 py-2 text-sm font-medium hover:bg-accent"
             >
               Till startsidan
-            </Link>
-            <Link
-              href="/probe"
-              className="rounded-full border border-primary/20 bg-background px-4 py-2 text-sm font-medium hover:bg-accent"
-            >
-              Testa /probe
             </Link>
           </div>
         </section>

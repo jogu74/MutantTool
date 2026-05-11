@@ -70,8 +70,7 @@ export function LoginForm() {
       <CardHeader>
         <CardTitle>Logga in</CardTitle>
         <CardDescription>
-          Auth.js är återaktiverat här. Exempelanvändare efter seed: <code>admin@mutant.local</code> och lösenordet{" "}
-          <code>mutant123</code>.
+          Exempelanvändare efter seed: <code>admin@mutant.local</code> och lösenordet <code>mutant123</code>.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -103,7 +102,7 @@ export function LoginForm() {
           </Button>
         </form>
         <p className={messageTone === "error" ? "mt-4 text-sm text-destructive" : "mt-4 text-sm text-muted-foreground"}>
-          {message ?? "Appdelen bakom login är fortfarande i ett tillfälligt återuppbyggnadsläge medan vi verifierar auth separat."}
+          {message ?? "Logga in med ditt konto för att komma till kampanjen."}
         </p>
       </CardContent>
     </Card>
