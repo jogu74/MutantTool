@@ -1,5 +1,3 @@
-import Link from "next/link";
-
 import { LoginForm } from "@/components/auth/login-form";
 
 export default function LoginPage() {
@@ -28,14 +26,6 @@ export default function LoginPage() {
               <p className="text-sm font-medium">Admin</p>
               <p className="mt-2 text-sm text-muted-foreground">Översikt över alla karaktärer och backup snapshots.</p>
             </div>
-          </div>
-          <div className="mt-8 flex flex-wrap gap-3">
-            <Link
-              href="/"
-              className="rounded-full border border-primary/20 bg-background px-4 py-2 text-sm font-medium hover:bg-accent"
-            >
-              Till startsidan
-            </Link>
           </div>
         </section>
         <section className="flex items-center justify-center">
