@@ -23,9 +23,6 @@ export const {
   session: {
     strategy: "jwt"
   },
-  pages: {
-    signIn: "/login"
-  },
   providers: [
     Credentials({
       name: "Credentials",
