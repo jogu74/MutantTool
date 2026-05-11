@@ -1,17 +1,8 @@
-import { redirect } from "next/navigation";
-
 import { LoginForm } from "@/components/auth/login-form";
-import { auth } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
 export default async function LoginPage() {
-  const session = await auth();
-
-  if (session?.user) {
-    redirect("/app/character");
-  }
-
   return (
     <main className="flex min-h-screen items-center justify-center px-6 py-12">
       <div className="grid w-full max-w-6xl gap-8 lg:grid-cols-[1.1fr_0.9fr]">
