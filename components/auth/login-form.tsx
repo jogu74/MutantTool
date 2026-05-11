@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { toast } from "sonner";
 
 export function LoginForm() {
   const router = useRouter();
@@ -16,6 +15,8 @@ export function LoginForm() {
   const [isMounted, setIsMounted] = useState(false);
   const [email, setEmail] = useState("admin@mutant.local");
   const [password, setPassword] = useState("mutant123");
+  const [message, setMessage] = useState<string | null>(null);
+  const [messageTone, setMessageTone] = useState<"neutral" | "error">("neutral");
 
   useEffect(() => {
     setIsMounted(true);
@@ -23,6 +24,8 @@ export function LoginForm() {
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    setMessage("Försöker logga in...");
+    setMessageTone("neutral");
 
     startTransition(async () => {
       const result = await signIn("credentials", {
@@ -32,10 +35,13 @@ export function LoginForm() {
       });
 
       if (result?.error) {
-        toast.error("Inloggningen misslyckades.");
+        setMessage("Inloggningen misslyckades. Om detta är Railway är databasen troligen inte inkopplad ännu.");
+        setMessageTone("error");
         return;
       }
 
+      setMessage("Inloggning lyckades. Skickar vidare...");
+      setMessageTone("neutral");
       router.push("/app");
       router.refresh();
     });
@@ -64,7 +70,8 @@ export function LoginForm() {
       <CardHeader>
         <CardTitle>Logga in</CardTitle>
         <CardDescription>
-          Exempelanvändare efter seed: <code>admin@mutant.local</code> och lösenordet <code>mutant123</code>.
+          Auth.js är återaktiverat här. Exempelanvändare efter seed: <code>admin@mutant.local</code> och lösenordet{" "}
+          <code>mutant123</code>.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -95,6 +102,9 @@ export function LoginForm() {
             {isPending ? "Loggar in..." : "Fortsätt till kampanjen"}
           </Button>
         </form>
+        <p className={messageTone === "error" ? "mt-4 text-sm text-destructive" : "mt-4 text-sm text-muted-foreground"}>
+          {message ?? "Appdelen bakom login är fortfarande i ett tillfälligt återuppbyggnadsläge medan vi verifierar auth separat."}
+        </p>
       </CardContent>
     </Card>
   );

@@ -1,9 +1,6 @@
 import Link from "next/link";
 
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { LoginForm } from "@/components/auth/login-form";
 
 export default function LoginPage() {
   return (
@@ -48,32 +45,7 @@ export default function LoginPage() {
           </div>
         </section>
         <section className="flex items-center justify-center">
-          <Card className="w-full max-w-md border-primary/20 bg-card/95">
-            <CardHeader>
-              <CardTitle>Logga in</CardTitle>
-              <CardDescription>
-                Formuläret är tillbaka visuellt. Själva inloggningen aktiveras i nästa steg.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="email">E-post</Label>
-                  <Input id="email" type="email" defaultValue="admin@mutant.local" disabled />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="password">Lösenord</Label>
-                  <Input id="password" type="password" defaultValue="mutant123" disabled />
-                </div>
-                <Button type="button" className="w-full" disabled>
-                  Inloggning återaktiveras snart
-                </Button>
-              </form>
-              <p className="mt-4 text-sm text-muted-foreground">
-                Nästa deploy-steg blir att koppla tillbaka Auth.js utan att återinföra redirect-loopen.
-              </p>
-            </CardContent>
-          </Card>
+          <LoginForm />
         </section>
       </div>
     </main>
