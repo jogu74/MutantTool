@@ -1,9 +1,29 @@
 import { redirect } from "next/navigation";
 
 import { auth } from "@/lib/auth";
+import { getAccessCookieToken } from "@/lib/access";
 import { db } from "@/lib/db";
 
 export async function getCurrentUser() {
+  const accessToken = await getAccessCookieToken();
+
+  if (accessToken) {
+    const tokenUser = await db.user.findUnique({
+      where: { accessToken },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        role: true,
+        accessToken: true
+      }
+    });
+
+    if (tokenUser) {
+      return tokenUser;
+    }
+  }
+
   const session = await auth();
 
   if (!session?.user?.id) {
@@ -16,7 +36,8 @@ export async function getCurrentUser() {
       id: true,
       email: true,
       name: true,
-      role: true
+      role: true,
+      accessToken: true
     }
   });
 }
@@ -25,7 +46,7 @@ export async function requireUser() {
   const user = await getCurrentUser();
 
   if (!user) {
-    redirect("/login");
+    redirect("/");
   }
 
   return user;

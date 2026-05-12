@@ -3,17 +3,15 @@
 import { type FormEvent, useState, useTransition } from "react";
 import Link from "next/link";
 import type { Route } from "next";
-import { Download, KeyRound, Save, Trash2, UserPlus } from "lucide-react";
+import { Copy, Download, RefreshCcw, Save, Trash2, Upload, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select } from "@/components/ui/select";
-import { adminResetPlayerPassword } from "@/lib/actions/account";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { createBackupSnapshot, createPlayerWithCharacter, deletePlayerAccount } from "@/lib/actions/admin";
+import { createBackupSnapshot, createPlayerWithCharacter, deletePlayerAccount, rotateAccessLink } from "@/lib/actions/admin";
 import { calculateTotalCarriedWeight } from "@/lib/rules";
 import type { SerializedCharacter } from "@/lib/serializers";
 
@@ -25,6 +23,7 @@ type Snapshot = {
 type Player = {
   id: string;
   email: string;
+  accessPath: string;
   character: {
     id: string;
     name: string;
@@ -33,25 +32,53 @@ type Player = {
 };
 
 export function AdminDashboard({
+  adminLink,
   characters,
   snapshots,
   players
 }: {
+  adminLink: {
+    userId: string;
+    accessPath: string;
+  };
   characters: SerializedCharacter[];
   snapshots: Snapshot[];
   players: Player[];
 }) {
   const [isPending, startTransition] = useTransition();
-  const [isResetPending, startResetTransition] = useTransition();
   const [isCreatePending, startCreateTransition] = useTransition();
   const [isDeletePending, startDeleteTransition] = useTransition();
+  const [isImportPending, startImportTransition] = useTransition();
+  const [isRotatePending, startRotateTransition] = useTransition();
   const [latestSnapshots, setLatestSnapshots] = useState(snapshots);
-  const [selectedPlayerId, setSelectedPlayerId] = useState(players[0]?.id ?? "");
-  const [resetPassword, setResetPassword] = useState("");
+  const [linkMap, setLinkMap] = useState<Record<string, string>>({
+    [adminLink.userId]: adminLink.accessPath,
+    ...Object.fromEntries(players.map((player) => [player.id, player.accessPath]))
+  });
   const [playerName, setPlayerName] = useState("");
   const [characterName, setCharacterName] = useState("");
   const [playerEmail, setPlayerEmail] = useState("");
-  const [playerPassword, setPlayerPassword] = useState("");
+  const [backupFile, setBackupFile] = useState<File | null>(null);
+
+  function toAbsoluteUrl(path: string) {
+    if (typeof window === "undefined") {
+      return path;
+    }
+
+    return new URL(path, window.location.origin).toString();
+  }
+
+  async function copyLink(path: string, successMessage = "Länken kopierades.") {
+    const absoluteUrl = toAbsoluteUrl(path);
+
+    try {
+      await navigator.clipboard.writeText(absoluteUrl);
+      toast.success(successMessage);
+    } catch (error) {
+      console.error(error);
+      toast.error("Kunde inte kopiera länken automatiskt.");
+    }
+  }
 
   function handleCreateBackup() {
     startTransition(async () => {
@@ -66,18 +93,37 @@ export function AdminDashboard({
     });
   }
 
-  function handleResetPassword() {
-    startResetTransition(async () => {
+  function handleImportBackup() {
+    if (!backupFile) {
+      toast.error("Välj en backupfil först.");
+      return;
+    }
+
+    if (!window.confirm("Detta ersätter nuvarande kampanjdata med innehållet i backupen. Fortsätta?")) {
+      return;
+    }
+
+    startImportTransition(async () => {
       try {
-        await adminResetPlayerPassword({
-          userId: selectedPlayerId,
-          newPassword: resetPassword
+        const formData = new FormData();
+        formData.set("file", backupFile);
+
+        const response = await fetch("/api/admin/backups/import", {
+          method: "POST",
+          body: formData
         });
-        setResetPassword("");
-        toast.success("Spelarens lösenord uppdaterades.");
+
+        const result = (await response.json()) as { error?: string };
+
+        if (!response.ok) {
+          throw new Error(result.error ?? "Backupen kunde inte läsas in.");
+        }
+
+        toast.success("Backupen lästes in. Laddar om adminvyn...");
+        window.location.reload();
       } catch (error) {
         console.error(error);
-        toast.error(error instanceof Error ? error.message : "Kunde inte uppdatera spelarens lösenord.");
+        toast.error(error instanceof Error ? error.message : "Kunde inte läsa in backupen.");
       }
     });
   }
@@ -90,13 +136,12 @@ export function AdminDashboard({
         const created = await createPlayerWithCharacter({
           playerName,
           characterName,
-          email: playerEmail,
-          password: playerPassword
+          email: playerEmail
         });
         setPlayerName("");
         setCharacterName("");
         setPlayerEmail("");
-        setPlayerPassword("");
+        await copyLink(created.accessPath, "Spelarens länk kopierades.");
         toast.success("Spelare och karaktär skapades.");
         window.location.href = `/app/admin/characters/${created.id}`;
       } catch (error) {
@@ -123,15 +168,31 @@ export function AdminDashboard({
     });
   }
 
+  function handleRotateLink(userId: string) {
+    startRotateTransition(async () => {
+      try {
+        const result = await rotateAccessLink({ userId });
+        setLinkMap((current) => ({
+          ...current,
+          [userId]: result.accessPath
+        }));
+        await copyLink(result.accessPath, "Ny länk skapades och kopierades.");
+      } catch (error) {
+        console.error(error);
+        toast.error(error instanceof Error ? error.message : "Kunde inte skapa en ny länk.");
+      }
+    });
+  }
+
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader>
           <CardTitle>Lägg till spelare</CardTitle>
-          <CardDescription>Skapa ett nytt spelarkonto och en tom karaktär att fylla i senare.</CardDescription>
+          <CardDescription>Skapa en ny spelare och kopiera direkt den personliga länken till rollformuläret.</CardDescription>
         </CardHeader>
         <CardContent>
-          <form className="grid gap-4 md:grid-cols-2 xl:grid-cols-4" onSubmit={handleCreatePlayer}>
+          <form className="grid gap-4 md:grid-cols-2 xl:grid-cols-3" onSubmit={handleCreatePlayer}>
             <div className="space-y-2">
               <Label htmlFor="create-player-name">Spelarnamn</Label>
               <Input
@@ -151,7 +212,7 @@ export function AdminDashboard({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="create-player-email">E-post / login</Label>
+              <Label htmlFor="create-player-email">Kontaktadress / e-post</Label>
               <Input
                 id="create-player-email"
                 type="email"
@@ -160,24 +221,78 @@ export function AdminDashboard({
                 required
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="create-player-password">Startlösenord</Label>
-              <Input
-                id="create-player-password"
-                type="password"
-                value={playerPassword}
-                onChange={(event) => setPlayerPassword(event.target.value)}
-                minLength={8}
-                required
-              />
-            </div>
-            <div className="md:col-span-2 xl:col-span-4">
+            <div className="md:col-span-2 xl:col-span-3">
               <Button type="submit" disabled={isCreatePending}>
                 <UserPlus className="h-4 w-4" />
                 {isCreatePending ? "Skapar..." : "Skapa spelare"}
               </Button>
             </div>
           </form>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Åtkomstlänkar</CardTitle>
+          <CardDescription>
+            Alla länkar fungerar som nycklar. Den som har länken kommer in, så dela dem bara i er privata grupp.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="rounded-2xl border bg-background/70 p-4">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+              <div>
+                <p className="text-sm font-medium">Spelledarens länk</p>
+                <p className="mt-1 break-all text-sm text-muted-foreground">{toAbsoluteUrl(linkMap[adminLink.userId])}</p>
+              </div>
+              <div className="flex gap-2">
+                <Button type="button" variant="outline" size="sm" onClick={() => copyLink(linkMap[adminLink.userId])}>
+                  <Copy className="h-4 w-4" />
+                  Kopiera
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={isRotatePending}
+                  onClick={() => handleRotateLink(adminLink.userId)}
+                >
+                  <RefreshCcw className="h-4 w-4" />
+                  Ny länk
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            {players.map((player) => (
+              <div key={player.id} className="rounded-2xl border p-4">
+                <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                  <div>
+                    <p className="text-sm font-medium">{player.character?.playerName ?? player.email}</p>
+                    <p className="text-xs text-muted-foreground">{player.email}</p>
+                    <p className="mt-2 break-all text-sm text-muted-foreground">{toAbsoluteUrl(linkMap[player.id])}</p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <Button type="button" variant="outline" size="sm" onClick={() => copyLink(linkMap[player.id])}>
+                      <Copy className="h-4 w-4" />
+                      Kopiera
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={isRotatePending}
+                      onClick={() => handleRotateLink(player.id)}
+                    >
+                      <RefreshCcw className="h-4 w-4" />
+                      Ny länk
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         </CardContent>
       </Card>
 
@@ -249,8 +364,27 @@ export function AdminDashboard({
       <Card>
         <CardHeader>
           <CardTitle>Backup snapshots</CardTitle>
+          <CardDescription>Skapa en snapshot före större ändringar och använd JSON-upload för att läsa tillbaka en backup.</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-6">
+          <div className="rounded-2xl border bg-background/70 p-4">
+            <div className="grid gap-4 md:grid-cols-[1fr_auto] md:items-end">
+              <div className="space-y-2">
+                <Label htmlFor="backup-upload">Läs in backup</Label>
+                <Input
+                  id="backup-upload"
+                  type="file"
+                  accept="application/json"
+                  onChange={(event) => setBackupFile(event.target.files?.[0] ?? null)}
+                />
+                <p className="text-xs text-muted-foreground">JSON-filen ersätter nuvarande kampanjdata i appen.</p>
+              </div>
+              <Button type="button" variant="outline" disabled={isImportPending || !backupFile} onClick={handleImportBackup}>
+                <Upload className="h-4 w-4" />
+                {isImportPending ? "Läser in..." : "Läs in backup"}
+              </Button>
+            </div>
+          </div>
           <div className="space-y-3">
             {latestSnapshots.length === 0 ? (
               <p className="text-sm text-muted-foreground">Inga snapshots ännu.</p>
@@ -273,54 +407,6 @@ export function AdminDashboard({
               ))
             )}
           </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Lösenordsreset för spelare</CardTitle>
-          <CardDescription>Sätt ett nytt lösenord för en spelare om någon tappat bort sitt gamla.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {players.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Det finns inga spelarkonton att återställa ännu.</p>
-          ) : (
-            <div className="grid gap-4 md:grid-cols-[1fr_1fr_auto] md:items-end">
-              <div className="space-y-2">
-                <Label htmlFor="reset-player">Spelare</Label>
-                <Select
-                  id="reset-player"
-                  value={selectedPlayerId}
-                  onChange={(event) => setSelectedPlayerId(event.target.value)}
-                >
-                  {players.map((player) => (
-                    <option key={player.id} value={player.id}>
-                      {player.character?.playerName ?? player.email} ({player.email})
-                    </option>
-                  ))}
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="reset-password">Nytt lösenord</Label>
-                <Input
-                  id="reset-password"
-                  type="password"
-                  value={resetPassword}
-                  onChange={(event) => setResetPassword(event.target.value)}
-                  minLength={8}
-                  placeholder="Minst 8 tecken"
-                />
-              </div>
-              <Button
-                type="button"
-                onClick={handleResetPassword}
-                disabled={isResetPending || !selectedPlayerId || resetPassword.length < 8}
-              >
-                <KeyRound className="h-4 w-4" />
-                {isResetPending ? "Uppdaterar..." : "Sätt nytt lösenord"}
-              </Button>
-            </div>
-          )}
         </CardContent>
       </Card>
     </div>

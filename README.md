@@ -9,18 +9,17 @@ Privat kampanjapp för `Mutant: Undergångens arvtagare`, byggd för en liten di
 - Tailwind CSS
 - Prisma
 - PostgreSQL
-- Auth.js med credentials-login
+- Hemliga personliga länkar per spelare och admin
 
 ## Det här ingår i första inkrementet
 
-- Inloggning med e-post/lösenord
-- Server-side auth och rollkontroll för `PLAYER` och `ADMIN`
+- Åtkomst via hemliga länkar och server-side access control
 - `Min karaktär` med autosave
 - Admin-dashboard med karaktärsöversikt
 - Redigering av valfri karaktär som admin
 - Journal med skapa/lista/ta bort
-- Backup snapshots till databasen och JSON-download
-- Seed-data för kampanj, admin, 4 spelare och exempelkaraktärer
+- Backup snapshots till databasen, JSON-download och JSON-import
+- Seed-data för kampanj, admin, 4 spelare och exempelkaraktärer med färdiga åtkomstlänkar
 
 ## Miljövariabler
 
@@ -32,6 +31,8 @@ AUTH_SECRET="replace-with-a-long-random-string"
 AUTH_TRUST_HOST="true"
 AUTH_URL="http://localhost:3000"
 ```
+
+`AUTH_*` används bara för den tillfälliga bryggan `/legacy-access` om ni vill växla över från gamla testkonton till länksystemet utan att låsa ute någon.
 
 ## Lokal körning
 
@@ -61,19 +62,19 @@ pnpm exec prisma migrate dev --name init
 pnpm exec prisma db seed
 ```
 
+Seed-scriptet skriver ut adminlänken i terminalen som `/access/<token>`.
+
 5. Starta utvecklingsservern:
 
 ```bash
 pnpm dev
 ```
 
-## Seed-konton
+## Seed-data
 
-- Admin: `admin@mutant.local` / `mutant123`
-- Spelare: `alva@mutant.local` / `mutant123`
-- Spelare: `bo@mutant.local` / `mutant123`
-- Spelare: `cian@mutant.local` / `mutant123`
-- Spelare: `disa@mutant.local` / `mutant123`
+- Adminen och varje exempelspelare får en egen personlig åtkomstlänk.
+- Adminlänken skrivs ut när seed körs.
+- Spelarlänkarna kan kopieras från adminpanelen under `Åtkomstlänkar`.
 
 ## Railway
 
@@ -93,6 +94,12 @@ Start command: pnpm start
 pnpm exec prisma migrate deploy
 pnpm exec prisma db seed
 ```
+
+Efter seed:
+
+- öppna adminlänken som skrivs ut i loggarna
+- kopiera spelarlänkar från adminpanelen
+- använd `Backup snapshots` för JSON-download och `Läs in backup` för att återställa en uppladdad backup
 
 ## Notering om extern disk på macOS
 

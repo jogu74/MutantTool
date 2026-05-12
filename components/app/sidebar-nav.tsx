@@ -3,7 +3,7 @@
 import Link from "next/link";
 import type { Route } from "next";
 import { usePathname } from "next/navigation";
-import { BookText, Settings, Shield, User } from "lucide-react";
+import { BookText, Shield, User } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -26,12 +26,6 @@ const items: Array<{
     href: "/app/journal",
     label: "Journal",
     icon: BookText,
-    adminOnly: false
-  },
-  {
-    href: "/app/account",
-    label: "Konto",
-    icon: Settings,
     adminOnly: false
   },
   {

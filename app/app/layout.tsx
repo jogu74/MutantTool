@@ -3,6 +3,7 @@ import { LogOut } from "lucide-react";
 
 import { SidebarNav } from "@/components/app/sidebar-nav";
 import { Button } from "@/components/ui/button";
+import { clearAccessCookie } from "@/lib/access";
 import { signOut } from "@/lib/auth";
 import { requireUser } from "@/lib/authorization";
 
@@ -18,8 +19,9 @@ export default async function AppLayout({
   async function logoutAction() {
     "use server";
 
+    await clearAccessCookie();
     await signOut({
-      redirectTo: "/login"
+      redirectTo: "/"
     });
   }
 
@@ -36,7 +38,7 @@ export default async function AppLayout({
           <form action={logoutAction} className="mt-8">
             <Button type="submit" variant="outline" className="w-full justify-start">
               <LogOut className="h-4 w-4" />
-              Logga ut
+              Lämna länken
             </Button>
           </form>
         </aside>

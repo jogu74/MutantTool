@@ -1,15 +1,27 @@
 "use server";
 
-import bcrypt from "bcryptjs";
+import { revalidatePath } from "next/cache";
+
+import { buildAccessPath, createAccessToken, LINK_ONLY_PASSWORD_HASH, rotateUserAccessToken, setAccessCookie } from "@/lib/access";
 import { requireAdmin } from "@/lib/authorization";
 import { createBackupSnapshotRecord, downloadBackupSnapshot as getSnapshot } from "@/lib/backup";
 import { db } from "@/lib/db";
 import { NATURAL_SKILLS } from "@/lib/game-data";
 import { calculateTraumaThreshold } from "@/lib/rules";
-import { adminCreatePlayerSchema, adminDeletePlayerSchema, backupDownloadSchema } from "@/lib/validators";
+import {
+  adminCreatePlayerSchema,
+  adminDeletePlayerSchema,
+  adminRotateAccessLinkSchema,
+  backupDownloadSchema
+} from "@/lib/validators";
 
 function invalidateAdminViews(characterId?: string) {
-  void characterId;
+  revalidatePath("/app");
+  revalidatePath("/app/admin");
+
+  if (characterId) {
+    revalidatePath(`/app/admin/characters/${characterId}`);
+  }
 }
 
 export async function createBackupSnapshot() {
@@ -74,15 +86,16 @@ export async function createPlayerWithCharacter(input: unknown) {
     throw new Error("Ingen kampanj hittades.");
   }
 
-  const passwordHash = await bcrypt.hash(parsed.password, 10);
   const traumaThreshold = calculateTraumaThreshold(0, 0);
+  const accessToken = createAccessToken();
 
   const character = await db.$transaction(async (tx) => {
     const user = await tx.user.create({
       data: {
         email,
         name: parsed.playerName,
-        passwordHash,
+        passwordHash: LINK_ONLY_PASSWORD_HASH,
+        accessToken,
         role: "PLAYER"
       }
     });
@@ -139,8 +152,11 @@ export async function createPlayerWithCharacter(input: unknown) {
     return createdCharacter;
   });
 
+  invalidateAdminViews(character.id);
+
   return {
-    id: character.id
+    id: character.id,
+    accessPath: buildAccessPath(accessToken)
   };
 }
 
@@ -167,4 +183,46 @@ export async function deletePlayerAccount(input: unknown) {
       id: parsed.userId
     }
   });
+
+  invalidateAdminViews();
+}
+
+export async function rotateAccessLink(input: unknown) {
+  const admin = await requireAdmin();
+  const parsed = adminRotateAccessLinkSchema.parse(input);
+
+  const user = await db.user.findUnique({
+    where: {
+      id: parsed.userId
+    },
+    select: {
+      id: true,
+      role: true,
+      character: {
+        select: {
+          id: true
+        }
+      }
+    }
+  });
+
+  if (!user) {
+    throw new Error("Kontot kunde inte hittas.");
+  }
+
+  if (user.role !== "PLAYER" && user.id !== admin.id) {
+    throw new Error("Endast spelarlänkar eller din egen adminlänk kan roteras här.");
+  }
+
+  const accessToken = await rotateUserAccessToken(parsed.userId);
+
+  if (parsed.userId === admin.id) {
+    await setAccessCookie(accessToken);
+  }
+
+  invalidateAdminViews(user.character?.id);
+
+  return {
+    accessPath: buildAccessPath(accessToken)
+  };
 }

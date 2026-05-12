@@ -1,6 +1,7 @@
 import bcrypt from "bcryptjs";
 
 import { PrismaClient } from "../generated/prisma";
+import { createAccessToken } from "../lib/access-token";
 
 import {
   calculateCarryingCapacity,
@@ -52,6 +53,7 @@ async function main() {
         email: "admin@mutant.local",
         name: "Spelledare",
         passwordHash,
+        accessToken: createAccessToken(),
         role: "ADMIN"
       }
     }),
@@ -60,6 +62,7 @@ async function main() {
         email: "alva@mutant.local",
         name: "Alva",
         passwordHash,
+        accessToken: createAccessToken(),
         role: "PLAYER"
       }
     }),
@@ -68,6 +71,7 @@ async function main() {
         email: "bo@mutant.local",
         name: "Bo",
         passwordHash,
+        accessToken: createAccessToken(),
         role: "PLAYER"
       }
     }),
@@ -76,6 +80,7 @@ async function main() {
         email: "cian@mutant.local",
         name: "Cian",
         passwordHash,
+        accessToken: createAccessToken(),
         role: "PLAYER"
       }
     }),
@@ -84,6 +89,7 @@ async function main() {
         email: "disa@mutant.local",
         name: "Disa",
         passwordHash,
+        accessToken: createAccessToken(),
         role: "PLAYER"
       }
     })
@@ -330,6 +336,9 @@ async function main() {
       content: "Första exempelanteckningen. Här kan gruppen skriva minnesanteckningar efter spelmötet."
     }
   });
+
+  console.log(`Seed completed for campaign ${campaign.name}`);
+  console.log("Admin access:", `/access/${users[0].accessToken}`);
 }
 
 main()

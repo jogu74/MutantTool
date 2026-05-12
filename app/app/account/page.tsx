@@ -1,8 +1,5 @@
-import { AccountSettings } from "@/components/account/AccountSettings";
-import { requireUser } from "@/lib/authorization";
+import { redirect } from "next/navigation";
 
-export default async function AccountPage() {
-  const user = await requireUser();
-
-  return <AccountSettings user={user} />;
+export default function AccountPage() {
+  redirect("/app");
 }

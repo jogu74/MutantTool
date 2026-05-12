@@ -1,10 +1,12 @@
 import { AdminDashboard } from "@/components/admin/AdminDashboard";
+import { buildAccessPath, ensureUserAccessToken } from "@/lib/access";
 import { requireAdmin } from "@/lib/authorization";
 import { db } from "@/lib/db";
 import { listCharactersForAdmin } from "@/lib/queries";
 
 export default async function AdminPage() {
-  await requireAdmin();
+  const admin = await requireAdmin();
+  const adminAccessToken = await ensureUserAccessToken(admin.id);
 
   const [characters, snapshots, players] = await Promise.all([
     listCharactersForAdmin(),
@@ -25,6 +27,7 @@ export default async function AdminPage() {
       select: {
         id: true,
         email: true,
+        accessToken: true,
         character: {
           select: {
             id: true,
@@ -39,5 +42,26 @@ export default async function AdminPage() {
     })
   ]);
 
-  return <AdminDashboard characters={characters} snapshots={snapshots} players={players} />;
+  const playersWithLinks = await Promise.all(
+    players.map(async (player) => {
+      const accessToken = player.accessToken ?? (await ensureUserAccessToken(player.id));
+
+      return {
+        ...player,
+        accessPath: buildAccessPath(accessToken)
+      };
+    })
+  );
+
+  return (
+    <AdminDashboard
+      adminLink={{
+        userId: admin.id,
+        accessPath: buildAccessPath(adminAccessToken)
+      }}
+      characters={characters}
+      snapshots={snapshots}
+      players={playersWithLinks}
+    />
+  );
 }
