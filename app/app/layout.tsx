@@ -1,10 +1,10 @@
 import type { ReactNode } from "react";
 import { LogOut } from "lucide-react";
+import { redirect } from "next/navigation";
 
 import { SidebarNav } from "@/components/app/sidebar-nav";
 import { Button } from "@/components/ui/button";
 import { clearAccessCookie } from "@/lib/access";
-import { signOut } from "@/lib/auth";
 import { requireUser } from "@/lib/authorization";
 
 export const dynamic = "force-dynamic";
@@ -20,9 +20,7 @@ export default async function AppLayout({
     "use server";
 
     await clearAccessCookie();
-    await signOut({
-      redirectTo: "/"
-    });
+    redirect("/");
   }
 
   return (

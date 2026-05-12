@@ -1,37 +1,17 @@
 import { redirect } from "next/navigation";
 
-import { auth } from "@/lib/auth";
 import { getAccessCookieToken } from "@/lib/access";
 import { db } from "@/lib/db";
 
 export async function getCurrentUser() {
   const accessToken = await getAccessCookieToken();
 
-  if (accessToken) {
-    const tokenUser = await db.user.findUnique({
-      where: { accessToken },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        role: true,
-        accessToken: true
-      }
-    });
-
-    if (tokenUser) {
-      return tokenUser;
-    }
-  }
-
-  const session = await auth();
-
-  if (!session?.user?.id) {
+  if (!accessToken) {
     return null;
   }
 
   return db.user.findUnique({
-    where: { id: session.user.id },
+    where: { accessToken },
     select: {
       id: true,
       email: true,
