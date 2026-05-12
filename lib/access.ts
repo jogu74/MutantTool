@@ -49,6 +49,27 @@ export function attachAccessCookie(response: NextResponse, token: string) {
   });
 }
 
+export function getPublicBaseUrl(request?: Request) {
+  const configured = process.env.AUTH_URL?.trim();
+
+  if (configured) {
+    return configured.replace(/\/$/, "");
+  }
+
+  if (!request) {
+    return "http://localhost:3000";
+  }
+
+  const forwardedProto = request.headers.get("x-forwarded-proto");
+  const forwardedHost = request.headers.get("x-forwarded-host");
+
+  if (forwardedProto && forwardedHost) {
+    return `${forwardedProto}://${forwardedHost}`;
+  }
+
+  return new URL(request.url).origin;
+}
+
 export async function ensureUserAccessToken(userId: string) {
   const user = await db.user.findUnique({
     where: {

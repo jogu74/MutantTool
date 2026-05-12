@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { attachAccessCookie } from "@/lib/access";
+import { attachAccessCookie, getPublicBaseUrl } from "@/lib/access";
 import { db } from "@/lib/db";
 
 export async function GET(
@@ -18,15 +18,17 @@ export async function GET(
       accessToken: token
     },
     select: {
-      id: true
+      id: true,
+      role: true
     }
   });
 
   if (!user) {
-    return NextResponse.redirect(new URL("/?status=invalid-link", request.url));
+    return NextResponse.redirect(new URL("/?status=invalid-link", getPublicBaseUrl(request)));
   }
 
-  const response = NextResponse.redirect(new URL("/app", request.url));
+  const destination = user.role === "ADMIN" ? "/app/admin" : "/app/character";
+  const response = NextResponse.redirect(new URL(destination, getPublicBaseUrl(request)));
   attachAccessCookie(response, token);
   return response;
 }
