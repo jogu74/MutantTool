@@ -184,8 +184,48 @@ export function AdminDashboard({
     });
   }
 
+  const totalWeight = characters
+    .reduce(
+      (sum, character) =>
+        sum +
+        calculateTotalCarriedWeight({
+          equipment: character.equipmentItems,
+          armor: character.armorItems,
+          weapons: character.weapons
+        }),
+      0
+    )
+    .toFixed(1);
+
   return (
     <div className="space-y-6">
+      <section className="rounded-[1.75rem] border border-border/70 bg-background/75 p-6">
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+          <div className="max-w-3xl">
+            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-primary">Spelledarpanel</p>
+            <h1 className="mt-3 font-display text-3xl leading-tight sm:text-4xl">Karaktärer, länkar och säkerhetskopior på ett ställe.</h1>
+            <p className="mt-3 text-sm text-muted-foreground sm:text-base">
+              Härifrån skapar du nya spelare, delar personliga länkar, följer kampanjens status och laddar ner eller
+              återställer backups.
+            </p>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-3">
+            <div className="rounded-2xl border bg-card/90 px-4 py-3">
+              <p className="text-xs uppercase tracking-[0.22em] text-muted-foreground">Karaktärer</p>
+              <p className="mt-2 text-2xl font-semibold">{characters.length}</p>
+            </div>
+            <div className="rounded-2xl border bg-card/90 px-4 py-3">
+              <p className="text-xs uppercase tracking-[0.22em] text-muted-foreground">Spelarlänkar</p>
+              <p className="mt-2 text-2xl font-semibold">{players.length + 1}</p>
+            </div>
+            <div className="rounded-2xl border bg-card/90 px-4 py-3">
+              <p className="text-xs uppercase tracking-[0.22em] text-muted-foreground">Total bärvikt</p>
+              <p className="mt-2 text-2xl font-semibold">{totalWeight}</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <Card>
         <CardHeader>
           <CardTitle>Lägg till spelare</CardTitle>
@@ -299,7 +339,7 @@ export function AdminDashboard({
       <Card>
         <CardHeader className="flex flex-row items-center justify-between gap-4">
           <div>
-            <CardTitle>Admin-dashboard</CardTitle>
+            <CardTitle>Karaktärsöversikt</CardTitle>
             <p className="mt-1 text-sm text-muted-foreground">
               Översikt över alla karaktärer och snabba länkar till hela rollformuläret.
             </p>
